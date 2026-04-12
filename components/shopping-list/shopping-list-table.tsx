@@ -4,7 +4,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ItemRow } from "@/components/ui/item-row";
 import { CrudRowActions } from "@/components/settings/crud-row-actions";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { SHOPPING_CATEGORY_LABEL_KEYS } from "@/lib/constants";
 import { type ShoppingItem } from "./types";
 
 interface ShoppingListTableProps {
@@ -84,20 +83,12 @@ export function ShoppingListTable({
             </button>
             <p className="text-sm font-medium text-[var(--foreground)]">{item.name}</p>
             {item.category ? (
-              (() => {
-                const labelKey = item.category in SHOPPING_CATEGORY_LABEL_KEYS
-                  ? SHOPPING_CATEGORY_LABEL_KEYS[item.category as keyof typeof SHOPPING_CATEGORY_LABEL_KEYS]
-                  : null;
-
-                return (
-                  <span
-                    className="inline-flex w-fit rounded-lg px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600"
-                    style={categoryStyleByName[item.category]}
-                  >
-                    {labelKey ? t(labelKey) : item.category}
-                  </span>
-                );
-              })()
+              <span
+                className="inline-flex w-fit rounded-lg px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600"
+                style={categoryStyleByName[item.category]}
+              >
+                {item.category}
+              </span>
             ) : (
               <span className="text-xs text-[var(--muted)]">—</span>
             )}

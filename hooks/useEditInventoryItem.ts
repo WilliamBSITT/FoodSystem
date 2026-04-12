@@ -27,6 +27,8 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
+  const [showForceDeleteConfirmation, setShowForceDeleteConfirmation] = useState(false);
+  const [pendingForceDelete, setPendingForceDelete] = useState(false);
 
   function open(item: InventoryItem) {
     setEditingItem(item);
@@ -39,12 +41,31 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setEditZoneId(String(item.zone_id ?? item.zone?.id ?? ""));
     setEditZoneDetailId(String(item.zone_detail_id ?? item.zone_detail?.id ?? ""));
     setSaveError(null);
+    setShowDeleteConfirmation(false);
+    setShowForceDeleteConfirmation(false);
+    setPendingDelete(false);
+    setPendingForceDelete(false);
   }
 
   function close() {
     if (isSaving) return;
     setEditingItem(null);
     setSaveError(null);
+    setShowDeleteConfirmation(false);
+    setShowForceDeleteConfirmation(false);
+    setPendingDelete(false);
+    setPendingForceDelete(false);
+  }
+
+  function requestForceDelete() {
+    if (!editingItem || isSaving) return;
+    setSaveError(null);
+    setShowForceDeleteConfirmation(true);
+  }
+
+  function cancelForceDelete() {
+    if (pendingForceDelete) return;
+    setShowForceDeleteConfirmation(false);
   }
 
   async function save() {
@@ -277,6 +298,37 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setEditingItem(null);
   }
 
+  async function forceDelete() {
+    if (!editingItem) return;
+
+    setPendingForceDelete(true);
+    setIsSaving(true);
+    setSaveError(null);
+
+    const { error: deleteError } = await supabase
+      .from("inventory_items")
+      .delete()
+      .eq("id", editingItem.id);
+
+    if (deleteError) {
+      const userMessage = getErrorMessage(deleteError);
+      setSaveError(userMessage);
+      logError(deleteError, "useEditInventoryItem.forceDelete.delete");
+      setPendingForceDelete(false);
+      setIsSaving(false);
+      return;
+    }
+
+    invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+    await onSuccess();
+    onCompleted?.(t("inventory.itemDeleted"));
+    setPendingForceDelete(false);
+    setShowDeleteConfirmation(false);
+    setShowForceDeleteConfirmation(false);
+    setIsSaving(false);
+    setEditingItem(null);
+  }
+
   return {
     editingItem,
     fields: {
@@ -309,5 +361,10 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     pendingDelete,
     confirmDelete,
     continueWithoutShoppingList,
+    requestForceDelete,
+    cancelForceDelete,
+    forceDelete,
+    showForceDeleteConfirmation,
+    pendingForceDelete,
   };
 }

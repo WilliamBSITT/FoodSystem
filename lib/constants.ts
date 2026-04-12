@@ -31,31 +31,5 @@ export function isPasswordComplex(password: string) {
   return PASSWORD_COMPLEXITY_REGEX.test(password);
 }
 
-export const SHOPPING_CATEGORY_COLORS: Record<string, string> = {
-  Dairy: "bg-blue-100 text-blue-700",
-  Pantry: "bg-amber-100 text-amber-700",
-  Fruits: "bg-orange-100 text-orange-700",
-  Meat: "bg-red-100 text-red-700",
-  Seafood: "bg-cyan-100 text-cyan-700",
-  Frozen: "bg-indigo-100 text-indigo-700",
-  Vegetables: "bg-green-100 text-green-700",
-  Bakery: "bg-yellow-100 text-yellow-700",
-  Beverages: "bg-purple-100 text-purple-700",
-};
-
-export const SHOPPING_CATEGORY_LABEL_KEYS = {
-  Dairy: "shoppingCategories.dairy",
-  Pantry: "shoppingCategories.pantry",
-  Fruits: "shoppingCategories.fruits",
-  Meat: "shoppingCategories.meat",
-  Seafood: "shoppingCategories.seafood",
-  Frozen: "shoppingCategories.frozen",
-  Vegetables: "shoppingCategories.vegetables",
-  Bakery: "shoppingCategories.bakery",
-  Beverages: "shoppingCategories.beverages",
-} as const;
-
-export const SHOPPING_CATEGORY_OPTIONS = Object.keys(SHOPPING_CATEGORY_LABEL_KEYS) as Array<keyof typeof SHOPPING_CATEGORY_LABEL_KEYS>;
-
-export const APP_VERSION = "v1.15.5";
+export const APP_VERSION = "v1.16.0";
 export const APP_REPOSITORY_URL = "https://github.com/WilliamBSITT/FoodSystem";

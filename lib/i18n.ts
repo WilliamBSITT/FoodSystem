@@ -127,6 +127,10 @@ const en = {
   "inventory.zeroStockPromptDescription": "'{item}' reached zero stock. Do you want to add it to the shopping list?",
   "inventory.zeroStockPromptAdd": "Add to shopping list",
   "inventory.zeroStockPromptSkip": "Continue without adding",
+  "inventory.forceDelete": "Delete permanently",
+  "inventory.forceDeleteTitle": "Permanent deletion",
+  "inventory.forceDeleteDescription": "Delete '{item}' permanently from inventory? This action cannot be undone.",
+  "inventory.forceDeleteConfirm": "Delete permanently",
   "inventory.itemAddedToShoppingList": "Item added to shopping list.",
   "inventory.itemMovedToShoppingList": "Item moved to shopping list.",
 
@@ -560,6 +564,10 @@ const fr: Record<TranslationKey, string> = {
   "inventory.zeroStockPromptDescription": "'{item}' est arrivé à zéro. Voulez-vous l'ajouter à la liste de courses ?",
   "inventory.zeroStockPromptAdd": "Ajouter à la liste de courses",
   "inventory.zeroStockPromptSkip": "Continuer sans ajouter",
+  "inventory.forceDelete": "Supprimer définitivement",
+  "inventory.forceDeleteTitle": "Suppression définitive",
+  "inventory.forceDeleteDescription": "Supprimer définitivement '{item}' de l'inventaire ? Cette action est irréversible.",
+  "inventory.forceDeleteConfirm": "Supprimer définitivement",
   "inventory.itemAddedToShoppingList": "Article ajouté à la liste de courses.",
   "inventory.itemMovedToShoppingList": "Article ajouté à la liste de courses.",
 
