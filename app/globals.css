@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f5f8;
+  --foreground: #1f2127;
+  --surface: #ffffff;
+  --surface-elevated: #f7f7fa;
+  --surface-muted: #eff1f6;
+  --surface-strong: #e6e8f0;
+  --border: #e3e6f0;
+  --muted: #6f7485;
+  --muted-strong: #4b5264;
+  --primary: #3345b8;
+  --primary-soft: #ebedf8;
+  --secondary: #475569;
+  --tertiary: #818cf8;
+  --neutral: #0f172a;
+  --danger: #b13535;
+  --success: #2f8f5a;
+}
+
+:root[data-theme="dark"] {
+  --background: #0b1020;
+  --foreground: #f4f0ff;
+  --surface: #11162a;
+  --surface-elevated: #171d34;
+  --surface-muted: #202642;
+  --surface-strong: #2b3152;
+  --border: #394263;
+  --muted: #c4b5fd;
+  --muted-strong: #ddd6fe;
+  --primary: #a78bfa;
+  --primary-soft: #25163f;
+  --secondary: #7c3aed;
+  --tertiary: #c084fc;
+  --neutral: #0f172a;
+  --danger: #fca5a5;
+  --success: #86efac;
+}
+
+:root[data-theme="dark"] .bg-white {
+  background-color: var(--surface) !important;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* iOS auto-zooms focused inputs below 16px, which can trigger horizontal panning */
+@media (hover: none) and (pointer: coarse) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: inherit;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--foreground);
+}
