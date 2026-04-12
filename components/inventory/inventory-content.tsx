@@ -470,6 +470,12 @@ export function InventoryContent({
           onConfirmDelete={edit.confirmDelete}
           onCancelDelete={edit.continueWithoutShoppingList}
           pendingDelete={edit.pendingDelete}
+          canForceDelete={Boolean(edit.editingItem.category?.keep_zero)}
+          showForceDeleteConfirmation={edit.showForceDeleteConfirmation}
+          onRequestForceDelete={edit.requestForceDelete}
+          onConfirmForceDelete={edit.forceDelete}
+          onCancelForceDelete={edit.cancelForceDelete}
+          pendingForceDelete={edit.pendingForceDelete}
           zones={zones}
           mode={editMode}
           onSwitchToFullEdit={editMode === "quantity-only" ? () => setEditMode("full") : undefined}

@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { ChevronDown, ChevronUp, SquarePen } from "lucide-react";
+import { ChevronDown, ChevronUp, SquarePen, Trash2 } from "lucide-react";
 import { type InventoryItem } from "@/hooks/useInventory";
 import { type StorageZone } from "@/hooks/useStorageZones";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -39,6 +39,12 @@ interface InventoryItemFormProps {
   onConfirmDelete?: () => void;
   onCancelDelete?: () => void;
   pendingDelete?: boolean;
+  canForceDelete?: boolean;
+  showForceDeleteConfirmation?: boolean;
+  onRequestForceDelete?: () => void;
+  onConfirmForceDelete?: () => void;
+  onCancelForceDelete?: () => void;
+  pendingForceDelete?: boolean;
   onSwitchToFullEdit?: () => void;
 }
 
@@ -70,6 +76,12 @@ export function InventoryItemForm({
   onConfirmDelete,
   onCancelDelete,
   pendingDelete = false,
+  canForceDelete = false,
+  showForceDeleteConfirmation = false,
+  onRequestForceDelete,
+  onConfirmForceDelete,
+  onCancelForceDelete,
+  pendingForceDelete = false,
   onSwitchToFullEdit,
 }: InventoryItemFormProps) {
   const { t } = useI18n();
@@ -88,6 +100,9 @@ export function InventoryItemForm({
   const familyError = isQuantityOnly ? null : validateFamilyName(editFamily);
   const noteError = isQuantityOnly ? null : validateNotes(editValue);
   const hasValidationError = Boolean(stockError ?? nameError ?? familyError ?? noteError);
+  const canShowForceDelete = canForceDelete
+    && !showDeleteConfirmation
+    && (isQuantityOnly ? (!Number.isNaN(parsedStock) && parsedStock === 0) : true);
 
   const handleZoneChange = (value: string) => {
     onZoneChange(value);
@@ -227,7 +242,19 @@ export function InventoryItemForm({
 
         {error && <p className="mt-3 text-xs font-semibold text-[#b13535]">{error}</p>}
 
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-5 flex items-center justify-between gap-3">
+          {canShowForceDelete ? (
+            <Button
+              className="h-10 w-10 justify-center rounded-full border border-[#b13535] bg-transparent p-0 text-[#b13535] hover:bg-[#b13535]/10"
+              onClick={onRequestForceDelete}
+              disabled={isSaving || pendingForceDelete}
+              aria-label={t("inventory.forceDelete")}
+              title={t("inventory.forceDelete")}
+            >
+              {pendingForceDelete ? <span className="text-xs">...</span> : <Trash2 size={16} />}
+            </Button>
+          ) : <span />}
+          <div className="flex items-center gap-3">
           <Button className="text-[var(--muted-strong)]" onClick={onCancel} disabled={isSaving}>
             {t("common.cancel")}
           </Button>
@@ -238,6 +265,7 @@ export function InventoryItemForm({
           >
             {isSaving ? t("common.saving") : t("common.save")}
           </Button>
+          </div>
         </div>
         {showDeleteConfirmation && (
           <ConfirmationDialog
@@ -251,6 +279,20 @@ export function InventoryItemForm({
             onCancel={() => onCancelDelete?.()}
             confirmDisabled={pendingDelete}
             tone="primary"
+          />
+        )}
+        {showForceDeleteConfirmation && (
+          <ConfirmationDialog
+            title={t("inventory.forceDeleteTitle")}
+            description={t("inventory.forceDeleteDescription", {
+              item: item.name,
+            })}
+            confirmLabel={pendingForceDelete ? t("common.deleting") : t("inventory.forceDeleteConfirm")}
+            cancelLabel={pendingForceDelete ? t("common.loading") : t("common.cancel")}
+            onConfirm={() => onConfirmForceDelete?.()}
+            onCancel={() => onCancelForceDelete?.()}
+            confirmDisabled={pendingForceDelete}
+            tone="danger"
           />
         )}
       </div>

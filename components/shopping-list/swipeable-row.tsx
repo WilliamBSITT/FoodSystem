@@ -1,7 +1,7 @@
 import { type CSSProperties } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
-import { SHOPPING_CATEGORY_LABEL_KEYS, SHOPPING_LIST_SWIPE_MAX } from "@/lib/constants";
+import { SHOPPING_LIST_SWIPE_MAX } from "@/lib/constants";
 import type { ShoppingItem } from "@/components/shopping-list/types";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -82,20 +82,12 @@ export function SwipeableRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-[var(--foreground)]">{item.name}</p>
           {item.category ? (
-            (() => {
-              const labelKey = item.category in SHOPPING_CATEGORY_LABEL_KEYS
-                ? SHOPPING_CATEGORY_LABEL_KEYS[item.category as keyof typeof SHOPPING_CATEGORY_LABEL_KEYS]
-                : null;
-
-              return (
-                <span
-                  className="mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600"
-                  style={categoryStyleByName[item.category]}
-                >
-                  {labelKey ? t(labelKey) : item.category}
-                </span>
-              );
-            })()
+            <span
+              className="mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600"
+              style={categoryStyleByName[item.category]}
+            >
+              {item.category}
+            </span>
           ) : (
             <span className="mt-0.5 text-[11px] text-[var(--muted)]">—</span>
           )}
