@@ -14,7 +14,7 @@ interface CategoryIconProps {
 
 export function CategoryIcon({ category }: CategoryIconProps) {
   if (!category) {
-    return <Avatar label="📦" className="h-14 w-14 text-2xl" />;
+    return <Avatar label="?" className="h-14 w-14 text-2xl" />;
   }
 
   const rawIcon = (category.icon ?? "").trim();
