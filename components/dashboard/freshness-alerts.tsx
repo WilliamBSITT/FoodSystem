@@ -9,6 +9,7 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { ExpiryAlertItem } from "./expiry-alert-item";
 import { InventoryItemForm } from "@/components/inventory/inventory-item-form";
 import { useInventory } from "@/hooks/useInventory";
+import { useCategories } from "@/hooks/useCategories";
 import { useStorageZones } from "@/hooks/useStorageZones";
 import { useEditInventoryItem } from "@/hooks/useEditInventoryItem";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
@@ -34,6 +35,7 @@ type EditMode = "quantity-only" | "full";
 
 export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
   const { items, loading, error, refetch } = useInventory();
+  const { categories } = useCategories();
   const { zones } = useStorageZones();
   const { t } = useI18n();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -115,6 +117,7 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
           editExpiry={edit.fields.editExpiry}
           editCreatedAt={edit.fields.editCreatedAt}
           editValue={edit.fields.editValue}
+          editCategoryId={edit.fields.editCategoryId}
           editZoneId={edit.fields.editZoneId}
           editZoneDetailId={edit.fields.editZoneDetailId}
           onNameChange={edit.setters.setEditName}
@@ -123,6 +126,7 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
           onExpiryChange={edit.setters.setEditExpiry}
           onCreatedAtChange={edit.setters.setEditCreatedAt}
           onValueChange={edit.setters.setEditValue}
+          onCategoryChange={edit.setters.setEditCategoryId}
           onZoneChange={edit.setters.setEditZoneId}
           onZoneDetailChange={edit.setters.setEditZoneDetailId}
           onSave={edit.save}
@@ -133,6 +137,7 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
           onConfirmDelete={edit.confirmDelete}
           onCancelDelete={edit.continueWithoutShoppingList}
           pendingDelete={edit.pendingDelete}
+          categories={categories}
           zones={zones}
           mode={editMode}
           onSwitchToFullEdit={editMode === "quantity-only" ? () => setEditMode("full") : undefined}

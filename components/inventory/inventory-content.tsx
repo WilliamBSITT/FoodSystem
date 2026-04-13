@@ -452,6 +452,7 @@ export function InventoryContent({
           editExpiry={edit.fields.editExpiry}
           editCreatedAt={edit.fields.editCreatedAt}
           editValue={edit.fields.editValue}
+          editCategoryId={edit.fields.editCategoryId}
           editZoneId={edit.fields.editZoneId}
           editZoneDetailId={edit.fields.editZoneDetailId}
           onNameChange={edit.setters.setEditName}
@@ -460,6 +461,7 @@ export function InventoryContent({
           onExpiryChange={edit.setters.setEditExpiry}
           onCreatedAtChange={edit.setters.setEditCreatedAt}
           onValueChange={edit.setters.setEditValue}
+          onCategoryChange={edit.setters.setEditCategoryId}
           onZoneChange={edit.setters.setEditZoneId}
           onZoneDetailChange={edit.setters.setEditZoneDetailId}
           onSave={edit.save}
@@ -476,6 +478,7 @@ export function InventoryContent({
           onConfirmForceDelete={edit.forceDelete}
           onCancelForceDelete={edit.cancelForceDelete}
           pendingForceDelete={edit.pendingForceDelete}
+          categories={categories}
           zones={zones}
           mode={editMode}
           onSwitchToFullEdit={editMode === "quantity-only" ? () => setEditMode("full") : undefined}
