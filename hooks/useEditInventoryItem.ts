@@ -21,6 +21,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
   const [editExpiry, setEditExpiry] = useState("");
   const [editCreatedAt, setEditCreatedAt] = useState(getTodayDateString());
   const [editValue, setEditValue] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
   const [editZoneId, setEditZoneId] = useState("");
   const [editZoneDetailId, setEditZoneDetailId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -38,6 +39,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setEditExpiry(item.expiry ? item.expiry.slice(0, 10) : "");
     setEditCreatedAt(item.created_at ? item.created_at.slice(0, 10) : getTodayDateString());
     setEditValue(item.value ?? "");
+    setEditCategoryId(String(item.category_id ?? item.category?.id ?? ""));
     setEditZoneId(String(item.zone_id ?? item.zone?.id ?? ""));
     setEditZoneDetailId(String(item.zone_detail_id ?? item.zone_detail?.id ?? ""));
     setSaveError(null);
@@ -76,6 +78,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     const sanitizedNote = sanitizeInput(editValue);
     const trimmedStock = editStock.trim();
     const parsedStock = Number.parseFloat(trimmedStock.replace(",", "."));
+    const parsedCategoryId = editCategoryId ? Number.parseInt(editCategoryId, 10) : null;
     const parsedZoneId = editZoneId ? Number.parseInt(editZoneId, 10) : null;
     const parsedZoneDetailId = editZoneDetailId ? Number.parseInt(editZoneDetailId, 10) : null;
     const nameError = validateProductName(sanitizedName);
@@ -110,7 +113,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setIsSaving(true);
     setSaveError(null);
 
-    const shouldKeepWhenZero = Boolean(editingItem.category?.keep_zero);
+    const shouldKeepWhenZero = await resolveKeepWhenZero(parsedCategoryId, Boolean(editingItem.category?.keep_zero));
     const trimmedExpiry = editExpiry.trim();
 
     if (parsedStock === 0) {
@@ -128,6 +131,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
           expiry: trimmedExpiry || null,
           created_at: editCreatedAt,
           value: sanitizedNote,
+          category_id: Number.isNaN(parsedCategoryId ?? NaN) ? null : parsedCategoryId,
           zone_id: Number.isNaN(parsedZoneId ?? NaN) ? null : parsedZoneId,
           zone_detail_id: Number.isNaN(parsedZoneDetailId ?? NaN) ? null : parsedZoneDetailId,
         })
@@ -157,6 +161,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setIsSaving(true);
     setSaveError(null);
 
+    const parsedCategoryId = editCategoryId ? Number.parseInt(editCategoryId, 10) : null;
     const shoppingItemName = sanitizeInput(editName) || editingItem.name;
     const shoppingItemCategory = editingItem.category?.name ?? null;
 
@@ -179,7 +184,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
 
     invalidateClientCache(LOCAL_CACHE_KEYS.shoppingListItems);
 
-    const shouldKeepWhenZero = Boolean(editingItem.category?.keep_zero);
+    const shouldKeepWhenZero = await resolveKeepWhenZero(parsedCategoryId, Boolean(editingItem.category?.keep_zero));
 
     if (shouldKeepWhenZero) {
       const trimmedExpiry = editExpiry.trim();
@@ -194,6 +199,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
           expiry: trimmedExpiry || null,
           created_at: editCreatedAt,
           value: sanitizeInput(editValue),
+          category_id: Number.isNaN(parsedCategoryId ?? NaN) ? null : parsedCategoryId,
           zone_id: Number.isNaN(parsedZoneId ?? NaN) ? null : parsedZoneId,
           zone_detail_id: Number.isNaN(parsedZoneDetailId ?? NaN) ? null : parsedZoneDetailId,
         })
@@ -242,7 +248,8 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setIsSaving(true);
     setSaveError(null);
 
-    const shouldKeepWhenZero = Boolean(editingItem.category?.keep_zero);
+    const parsedCategoryId = editCategoryId ? Number.parseInt(editCategoryId, 10) : null;
+    const shouldKeepWhenZero = await resolveKeepWhenZero(parsedCategoryId, Boolean(editingItem.category?.keep_zero));
 
     if (shouldKeepWhenZero) {
       const trimmedExpiry = editExpiry.trim();
@@ -257,6 +264,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
           expiry: trimmedExpiry || null,
           created_at: editCreatedAt,
           value: sanitizeInput(editValue),
+          category_id: Number.isNaN(parsedCategoryId ?? NaN) ? null : parsedCategoryId,
           zone_id: Number.isNaN(parsedZoneId ?? NaN) ? null : parsedZoneId,
           zone_detail_id: Number.isNaN(parsedZoneDetailId ?? NaN) ? null : parsedZoneDetailId,
         })
@@ -329,6 +337,31 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
     setEditingItem(null);
   }
 
+  async function resolveKeepWhenZero(categoryId: number | null, fallback: boolean) {
+    if (Number.isNaN(categoryId ?? NaN) || categoryId === null) {
+      return fallback;
+    }
+
+    const currentCategoryId = editingItem?.category_id ?? editingItem?.category?.id ?? null;
+
+    if (currentCategoryId === categoryId) {
+      return fallback;
+    }
+
+    const { data, error } = await supabase
+      .from("categories")
+      .select("keep_zero")
+      .eq("id", categoryId)
+      .maybeSingle();
+
+    if (error) {
+      logError(error, "useEditInventoryItem.resolveKeepWhenZero");
+      return fallback;
+    }
+
+    return Boolean(data?.keep_zero);
+  }
+
   return {
     editingItem,
     fields: {
@@ -338,6 +371,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
       editExpiry,
       editCreatedAt,
       editValue,
+      editCategoryId,
       editZoneId,
       editZoneDetailId,
     },
@@ -348,6 +382,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
       setEditExpiry,
       setEditCreatedAt,
       setEditValue,
+      setEditCategoryId,
       setEditZoneId,
       setEditZoneDetailId,
     },

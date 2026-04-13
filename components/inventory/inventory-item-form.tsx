@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { ChevronDown, ChevronUp, SquarePen, Trash2 } from "lucide-react";
-import { type InventoryItem } from "@/hooks/useInventory";
+import { type Category, type InventoryItem } from "@/hooks/useInventory";
 import { type StorageZone } from "@/hooks/useStorageZones";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -19,6 +19,7 @@ interface InventoryItemFormProps {
   editExpiry: string;
   editCreatedAt: string;
   editValue: string;
+  editCategoryId: string;
   editZoneId: string;
   editZoneDetailId: string;
   onNameChange: (value: string) => void;
@@ -27,12 +28,14 @@ interface InventoryItemFormProps {
   onExpiryChange: (value: string) => void;
   onCreatedAtChange: (value: string) => void;
   onValueChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
   onZoneChange: (value: string) => void;
   onZoneDetailChange: (value: string) => void;
   onSave: () => void;
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;
+  categories: Category[];
   zones: StorageZone[];
   mode?: EditMode;
   showDeleteConfirmation?: boolean;
@@ -56,6 +59,7 @@ export function InventoryItemForm({
   editExpiry,
   editCreatedAt,
   editValue,
+  editCategoryId,
   editZoneId,
   editZoneDetailId,
   onNameChange,
@@ -64,12 +68,14 @@ export function InventoryItemForm({
   onExpiryChange,
   onCreatedAtChange,
   onValueChange,
+  onCategoryChange,
   onZoneChange,
   onZoneDetailChange,
   onSave,
   onCancel,
   isSaving,
   error,
+  categories,
   zones,
   mode = "full",
   showDeleteConfirmation = false,
@@ -179,6 +185,18 @@ export function InventoryItemForm({
             <Field label={t("addProduct.family")} className="sm:col-span-2" required>
               <Input value={editFamily} onChange={(e) => onFamilyChange(sanitizeInputOnChange(e.target.value))} maxLength={100} />
               {familyError ? <p className="mt-1 text-xs font-semibold text-[#b13535]">{familyError}</p> : null}
+            </Field>
+            <Field label={t("addProduct.category")} className="sm:col-span-2">
+              <select
+                value={editCategoryId}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--foreground)] focus:outline-none"
+              >
+                <option value="">{t("inventory.uncategorized")}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
             </Field>
             <Field label={t("addProduct.quantity")} required>
               <div className="flex items-center gap-2">
