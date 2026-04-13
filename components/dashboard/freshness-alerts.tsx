@@ -42,7 +42,7 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
   const [editMode, setEditMode] = useState<EditMode>("quantity-only");
   useBodyScrollLock(isCalendarOpen);
 
-  const edit = useEditInventoryItem({ onSuccess: refetch });
+  const edit = useEditInventoryItem({ onSuccess: refetch, categories });
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
