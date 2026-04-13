@@ -12,7 +12,7 @@ import { useAutoDismissToast } from "@/hooks/useAutoDismissToast";
 import { useStorageZones } from "@/hooks/useStorageZones";
 import { useAddProduct } from "@/hooks/useAddProduct";
 import { useFamilies } from "@/hooks/useFamilies";
-import { addMonthsToDateString, getTodayDateString } from "@/lib/date-utils";
+import { getExpiryDateFromCategory, getTodayDateString } from "@/lib/date-utils";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { sanitizeInput, sanitizeInputOnChange, validateNotes, validateProductName } from "@/lib/input-validation";
 
@@ -43,23 +43,23 @@ export function AddProductContent() {
   const selectedZone = zones.find((zone) => String(zone.id) === zoneId);
   const zoneDetails = selectedZone?.details ?? [];
 
+  function syncExpiryDate(baseDate: string, nextCategoryId: string) {
+    const selectedCategory = categories.find((category) => String(category.id) === nextCategoryId);
+    const nextExpiryDate = getExpiryDateFromCategory(baseDate, selectedCategory);
+
+    if (nextExpiryDate) {
+      setExpiryDate(nextExpiryDate);
+    }
+  }
+
   function onCategoryChange(categoryValue: string) {
     setCategoryId(categoryValue);
+    syncExpiryDate(creationDate, categoryValue);
+  }
 
-    if (!categoryValue) {
-      return;
-    }
-
-    const selectedCategory = categories.find((category) => String(category.id) === categoryValue);
-    const categoryNotificationsEnabled = selectedCategory?.notify_on_expiry !== false;
-    const defaultExpiryMonths = selectedCategory?.default_expiry_months ?? 0;
-
-    if (!categoryNotificationsEnabled || defaultExpiryMonths <= 0) {
-      return;
-    }
-
-    const nextExpiry = addMonthsToDateString(getTodayDateString(), defaultExpiryMonths);
-    setExpiryDate(nextExpiry);
+  function onCreationDateChange(nextCreationDate: string) {
+    setCreationDate(nextCreationDate);
+    syncExpiryDate(nextCreationDate, categoryId);
   }
 
   async function onRegisterProduct() {
@@ -239,7 +239,7 @@ export function AddProductContent() {
                 <BorderedInput
                   type="date"
                   value={creationDate}
-                  onChange={(event) => setCreationDate(event.target.value)}
+                  onChange={(event) => onCreationDateChange(event.target.value)}
                 />
               </div>
               <div className="sm:col-span-2">

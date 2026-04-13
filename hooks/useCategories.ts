@@ -89,6 +89,7 @@ export function useCategories() {
 
         setCategories(nextCategories);
         writeClientCache(LOCAL_CACHE_KEYS.categories, nextCategories);
+        invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
 
         return updated;
       } finally {
@@ -97,6 +98,10 @@ export function useCategories() {
     },
     [syncedCategories],
   );
+
+  const countCategoryInventoryItems = useCallback(async (id: number) => {
+    return CategoryUsecase.countInventoryItemsByCategory(id);
+  }, []);
 
   const deleteCategory = useCallback(
     async (id: number) => {
@@ -125,6 +130,7 @@ export function useCategories() {
     refetch,
     createCategory,
     updateCategory,
+    countCategoryInventoryItems,
     deleteCategory,
   };
 }

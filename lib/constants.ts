@@ -31,5 +31,5 @@ export function isPasswordComplex(password: string) {
   return PASSWORD_COMPLEXITY_REGEX.test(password);
 }
 
-export const APP_VERSION = "v1.16.1";
+export const APP_VERSION = "v1.16.2";
 export const APP_REPOSITORY_URL = "https://github.com/WilliamBSITT/FoodSystem";

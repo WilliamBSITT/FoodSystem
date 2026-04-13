@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { getTodayDateString } from "@/lib/date-utils";
-import { type InventoryItem } from "@/hooks/useInventory";
+import { getExpiryDateFromCategory, getTodayDateString } from "@/lib/date-utils";
+import { type Category, type InventoryItem } from "@/hooks/useInventory";
 import { invalidateClientCache, LOCAL_CACHE_KEYS } from "@/lib/client-cache";
 import { sanitizeInput, validateFamilyName, validateNotes, validateProductName } from "@/lib/input-validation";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -10,9 +10,10 @@ import { getErrorMessage, logError } from "@/lib/error-utils";
 interface UseEditInventoryItemProps {
   onSuccess: () => Promise<unknown>;
   onCompleted?: (message: string) => void;
+  categories: Category[];
 }
 
-export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventoryItemProps) {
+export function useEditInventoryItem({ onSuccess, onCompleted, categories }: UseEditInventoryItemProps) {
   const { t } = useI18n();
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editName, setEditName] = useState("");
@@ -30,6 +31,25 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
   const [pendingDelete, setPendingDelete] = useState(false);
   const [showForceDeleteConfirmation, setShowForceDeleteConfirmation] = useState(false);
   const [pendingForceDelete, setPendingForceDelete] = useState(false);
+
+  function resolveCategoryById(categoryId: string) {
+    const parsedCategoryId = categoryId ? Number.parseInt(categoryId, 10) : NaN;
+
+    if (Number.isNaN(parsedCategoryId)) {
+      return editingItem?.category ?? null;
+    }
+
+    return categories.find((category) => category.id === parsedCategoryId) ?? editingItem?.category ?? null;
+  }
+
+  function syncExpiryDate(baseDate: string, categoryId: string) {
+    const selectedCategory = resolveCategoryById(categoryId);
+    const nextExpiryDate = getExpiryDateFromCategory(baseDate, selectedCategory);
+
+    if (nextExpiryDate) {
+      setEditExpiry(nextExpiryDate);
+    }
+  }
 
   function open(item: InventoryItem) {
     setEditingItem(item);
@@ -68,6 +88,16 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
   function cancelForceDelete() {
     if (pendingForceDelete) return;
     setShowForceDeleteConfirmation(false);
+  }
+
+  function updateEditCreatedAt(nextCreatedAt: string) {
+    setEditCreatedAt(nextCreatedAt);
+    syncExpiryDate(nextCreatedAt, editCategoryId);
+  }
+
+  function updateEditCategoryId(nextCategoryId: string) {
+    setEditCategoryId(nextCategoryId);
+    syncExpiryDate(editCreatedAt, nextCategoryId);
   }
 
   async function save() {
@@ -380,9 +410,9 @@ export function useEditInventoryItem({ onSuccess, onCompleted }: UseEditInventor
       setEditFamily,
       setEditStock,
       setEditExpiry,
-      setEditCreatedAt,
+      setEditCreatedAt: updateEditCreatedAt,
       setEditValue,
-      setEditCategoryId,
+      setEditCategoryId: updateEditCategoryId,
       setEditZoneId,
       setEditZoneDetailId,
     },

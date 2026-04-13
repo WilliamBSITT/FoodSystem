@@ -26,6 +26,12 @@ type CategoryDraft = {
   notify_on_expiry: boolean;
 };
 
+type PendingCategoryUpdate = {
+  categoryId: number;
+  payload: Omit<Category, "id">;
+  affectedCount: number;
+};
+
 const HEX_COLOR_REGEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})/;
 
 function extractHexColor(value: string, fallback: string) {
@@ -62,6 +68,7 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
     deleting,
     createCategory,
     updateCategory,
+    countCategoryInventoryItems,
     deleteCategory,
   } = useCategories();
 
@@ -70,6 +77,9 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
   const [draft, setDraft] = useState<CategoryDraft>(EMPTY_DRAFT);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [showExpiryImpactDialog, setShowExpiryImpactDialog] = useState(false);
+  const [pendingCategoryUpdate, setPendingCategoryUpdate] = useState<PendingCategoryUpdate | null>(null);
+  const [countingAffectedItems, setCountingAffectedItems] = useState(false);
 
   const editingCategory = useMemo(
     () => categories.find((category) => category.id === editingCategoryId) ?? null,
@@ -95,6 +105,33 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
 
   const backgroundHex = useMemo(() => extractHexColor(draft.bg, "#eef1ff"), [draft.bg]);
   const textHex = useMemo(() => extractHexColor(draft.color, "#3345b8"), [draft.color]);
+
+  function buildCategoryPayload(normalizedExpiryMonths: number): Omit<Category, "id"> {
+    return {
+      name: sanitizeInput(draft.name),
+      icon: sanitizeInput(draft.icon),
+      bg: draft.bg.trim(),
+      color: draft.color.trim(),
+      keep_zero: draft.keep_zero,
+      default_expiry_months: normalizedExpiryMonths,
+      notify_on_expiry: draft.notify_on_expiry,
+    };
+  }
+
+  async function saveCategory(normalizedExpiryMonths: number) {
+    const payload = buildCategoryPayload(normalizedExpiryMonths);
+
+    if (editingCategoryId === null) {
+      await createCategory(payload);
+      onToast?.(t("categories.added"));
+      closeModal();
+      return;
+    }
+
+    await updateCategory(editingCategoryId, payload);
+    onToast?.(t("categories.updated"));
+    closeModal();
+  }
 
   function openCreateModal() {
     setEditingCategoryId(null);
@@ -123,6 +160,9 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
     setEditingCategoryId(null);
     setDraft(EMPTY_DRAFT);
     setErrorMessage(null);
+    setShowExpiryImpactDialog(false);
+    setPendingCategoryUpdate(null);
+    setCountingAffectedItems(false);
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -137,34 +177,57 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
     try {
       const normalizedExpiryMonths = Math.max(0, Number.parseInt(String(draft.default_expiry_months), 10) || 0);
 
-      if (editingCategoryId === null) {
-        await createCategory({
-          name: sanitizeInput(draft.name),
-          icon: sanitizeInput(draft.icon),
-          bg: draft.bg.trim(),
-          color: draft.color.trim(),
-          keep_zero: draft.keep_zero,
-          default_expiry_months: normalizedExpiryMonths,
-          notify_on_expiry: draft.notify_on_expiry,
-        });
-        onToast?.(t("categories.added"));
-      } else {
-        await updateCategory(editingCategoryId, {
-          name: sanitizeInput(draft.name),
-          icon: sanitizeInput(draft.icon),
-          bg: draft.bg.trim(),
-          color: draft.color.trim(),
-          keep_zero: draft.keep_zero,
-          default_expiry_months: normalizedExpiryMonths,
-          notify_on_expiry: draft.notify_on_expiry,
-        });
-        onToast?.(t("categories.updated"));
+      if (
+        editingCategoryId !== null
+        && editingCategory
+        && editingCategory.default_expiry_months !== normalizedExpiryMonths
+      ) {
+        setCountingAffectedItems(true);
+
+        try {
+          const affectedCount = await countCategoryInventoryItems(editingCategoryId);
+          setPendingCategoryUpdate({
+            categoryId: editingCategoryId,
+            payload: buildCategoryPayload(normalizedExpiryMonths),
+            affectedCount,
+          });
+          setShowExpiryImpactDialog(true);
+        } finally {
+          setCountingAffectedItems(false);
+        }
+
+        return;
       }
 
-      closeModal();
+      await saveCategory(normalizedExpiryMonths);
     } catch (categoryError) {
       setErrorMessage(categoryError instanceof Error ? categoryError.message : t("categories.unableSave"));
     }
+  }
+
+  async function confirmExpiryImpactUpdate() {
+    if (!pendingCategoryUpdate) {
+      return;
+    }
+
+    setErrorMessage(null);
+
+    try {
+      await updateCategory(pendingCategoryUpdate.categoryId, pendingCategoryUpdate.payload);
+      onToast?.(t("categories.updated"));
+      setShowExpiryImpactDialog(false);
+      setPendingCategoryUpdate(null);
+      closeModal();
+    } catch (categoryError) {
+      setErrorMessage(categoryError instanceof Error ? categoryError.message : t("categories.unableSave"));
+      setShowExpiryImpactDialog(false);
+      setPendingCategoryUpdate(null);
+    }
+  }
+
+  function cancelExpiryImpactUpdate() {
+    setShowExpiryImpactDialog(false);
+    setPendingCategoryUpdate(null);
   }
 
   async function confirmDeleteCategory() {
@@ -184,7 +247,7 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
   }
 
   const savePending = creating || updating;
-  const saveDisabled = savePending || Boolean(categoryNameError);
+  const saveDisabled = savePending || countingAffectedItems || Boolean(categoryNameError);
 
   return (
     <section className="mt-8">
@@ -496,12 +559,33 @@ export function CategoriesSettingsContent({ onToast }: CategoriesSettingsContent
                   disabled={saveDisabled}
                   className="rounded-xl bg-[var(--primary)] px-4 py-2 text-xs normal-case tracking-normal text-white disabled:opacity-60"
                 >
-                  {savePending ? t("categories.saving") : editingCategory ? t("categories.saveChanges") : t("categories.createCategory")}
+                  {countingAffectedItems
+                    ? t("categories.countingImpact")
+                    : savePending
+                      ? t("categories.saving")
+                      : editingCategory
+                        ? t("categories.saveChanges")
+                        : t("categories.createCategory")}
                 </Button>
               </div>
             </form>
           </div>
         </div>
+      ) : null}
+
+      {showExpiryImpactDialog && pendingCategoryUpdate ? (
+        <ConfirmationDialog
+          title={t("categories.expiryImpactTitle")}
+          description={t("categories.expiryImpactDescription", {
+            count: pendingCategoryUpdate.affectedCount,
+            plural: pendingCategoryUpdate.affectedCount > 1 ? "s" : "",
+          })}
+          confirmLabel={updating ? t("categories.saving") : t("categories.expiryImpactConfirm")}
+          cancelLabel={t("common.cancel")}
+          onConfirm={confirmExpiryImpactUpdate}
+          onCancel={cancelExpiryImpactUpdate}
+          confirmDisabled={updating}
+        />
       ) : null}
 
       {deleteTarget ? (

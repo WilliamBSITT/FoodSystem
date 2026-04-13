@@ -1,5 +1,8 @@
 import { CategoryRepository } from "@/lib/repositories/category-repository";
 import type { Category } from "@/hooks/useInventory";
+import { getExpiryDateFromCategory, getTodayDateString } from "@/lib/date-utils";
+import { invalidateClientCache, LOCAL_CACHE_KEYS } from "@/lib/client-cache";
+import { supabase } from "@/lib/supabase";
 
 const CATEGORY_SCHEMA_MISSING_MESSAGE = "Les catégories sont temporairement indisponibles. Veuillez réessayer plus tard.";
 
@@ -167,7 +170,57 @@ export class CategoryUsecase {
       }
 
       if (lastError) throw lastError;
-      return this.normalizeCategory(result!);
+
+      const normalizedCategory = this.normalizeCategory(result!);
+      const { data: items, error: fetchItemsError } = await supabase
+        .from("inventory_items")
+        .select("id, created_at")
+        .eq("category_id", id);
+
+      if (fetchItemsError) {
+        throw fetchItemsError;
+      }
+
+      const inventoryItems = (items ?? []) as Array<{ id: number; created_at?: string | null }>;
+
+      await Promise.all(
+        inventoryItems.map(async (item) => {
+          const baseDate = item.created_at ? item.created_at.slice(0, 10) : getTodayDateString();
+          const nextExpiry = getExpiryDateFromCategory(baseDate, normalizedCategory);
+
+          const { error: updateItemError } = await supabase
+            .from("inventory_items")
+            .update({ expiry: nextExpiry })
+            .eq("id", item.id);
+
+          if (updateItemError) {
+            throw updateItemError;
+          }
+        }),
+      );
+
+      invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      return normalizedCategory;
+    } catch (error) {
+      throw this.mapError(this.toErrorDetails(error));
+    }
+  }
+
+  /**
+   * Counts inventory items assigned to a category
+   */
+  static async countInventoryItemsByCategory(id: number): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from("inventory_items")
+        .select("id", { count: "exact", head: true })
+        .eq("category_id", id);
+
+      if (error) {
+        throw error;
+      }
+
+      return count ?? 0;
     } catch (error) {
       throw this.mapError(this.toErrorDetails(error));
     }

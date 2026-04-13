@@ -58,7 +58,7 @@ export function InventoryContent({
   const [editMode, setEditMode] = useState<EditMode>("quantity-only");
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const edit = useEditInventoryItem({ onSuccess: refetch, onCompleted: showToast });
+  const edit = useEditInventoryItem({ onSuccess: refetch, onCompleted: showToast, categories });
 
   const { visibleItems, sortedVisibleItems, categoryCounts, zoneCounts, stats } = useInventoryFilters({
     items,

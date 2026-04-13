@@ -32,3 +32,23 @@ export function addMonthsToDateString(baseDate: string, months: number): string 
   const localOffsetMs = date.getTimezoneOffset() * 60 * 1000;
   return new Date(date.getTime() - localOffsetMs).toISOString().slice(0, 10);
 }
+
+type ExpiryRuleSource = {
+  default_expiry_months?: number | null;
+  default_expiry_days?: number | null;
+  notify_on_expiry?: boolean | null;
+};
+
+export function getExpiryDateFromCategory(baseDate: string, category?: ExpiryRuleSource | null): string | null {
+  if (!category || category.notify_on_expiry === false) {
+    return null;
+  }
+
+  const months = Number.parseInt(String(category.default_expiry_months ?? category.default_expiry_days ?? 0), 10);
+
+  if (Number.isNaN(months) || months <= 0) {
+    return null;
+  }
+
+  return addMonthsToDateString(baseDate, months);
+}
