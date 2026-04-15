@@ -2,7 +2,7 @@
 
 > **Master your kitchen. Eliminate waste. Own your data.**
 
-FoodSystem is an open-source kitchen inventory manager built for people who want full control over their food - and their data. Powered by Next.js and Supabase, it gives you a professional-grade workspace to track what you have, what's expiring, and what you need - without any black box.
+FoodSystem is an open-source kitchen inventory manager built for people who want full control over their food and their data. Powered by Next.js and Supabase, it gives you a professional-grade workspace to track what you have, what's expiring, and what you need - without any black box.
 
 ---
 

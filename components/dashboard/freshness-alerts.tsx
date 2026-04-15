@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { CategoryIcon } from "@/components/ui/category-icon";
 import { ExpiryAlertItem } from "./expiry-alert-item";
 import { InventoryItemForm } from "@/components/inventory/inventory-item-form";
 import { useInventory } from "@/hooks/useInventory";
+import { useFreshnessAlerts } from "@/hooks/useFreshnessAlerts";
 import { useCategories } from "@/hooks/useCategories";
 import { useStorageZones } from "@/hooks/useStorageZones";
 import { useEditInventoryItem } from "@/hooks/useEditInventoryItem";
@@ -34,7 +35,8 @@ interface FreshnessAlertsProps {
 type EditMode = "quantity-only" | "full";
 
 export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
-  const { items, loading, error, refetch } = useInventory();
+  const { refetch: refetchInventory } = useInventory();
+  const { items: items, loading, error, refetch } = useFreshnessAlerts();
   const { categories } = useCategories();
   const { zones } = useStorageZones();
   const { t } = useI18n();
@@ -55,6 +57,8 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
       .filter(({ daysLeft }) => daysLeft <= EXPIRY_THRESHOLD_DAYS)
       .slice(0, MAX_VISIBLE_ALERTS);
   }, [calendarEntries]);
+
+  // Use inventory refetch to refresh main cache after edits
 
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
 
