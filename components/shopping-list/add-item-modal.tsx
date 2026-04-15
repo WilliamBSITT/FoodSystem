@@ -8,19 +8,19 @@ interface AddItemModalProps {
   onClose: () => void;
   onSave: (item: Omit<ShoppingItem, "id" | "checked">) => void;
   initial?: ShoppingItem;
-  categories: string[];
+  categories: { id: number; name: string }[];
 }
 
 export function AddItemModal({ onClose, onSave, initial, categories }: AddItemModalProps) {
   const { t } = useI18n();
   const [name, setName] = useState(initial?.name ?? "");
   const [qty, setQty] = useState(String(initial?.qty ?? "1"));
-  const [category, setCategory] = useState<string | null>(initial?.category ?? null);
+  const [categoryId, setCategoryId] = useState<number | null>(initial?.category_id ?? null);
   const nameError = useMemo(() => validateShoppingListItemName(name), [name]);
 
   const handleSubmit = () => {
     if (nameError) return;
-    onSave({ name: sanitizeInput(name), qty: Number(qty) || 1, category });
+    onSave({ name: sanitizeInput(name), qty: Number(qty) || 1, category_id: categoryId });
     onClose();
   };
 
@@ -62,14 +62,14 @@ export function AddItemModal({ onClose, onSave, initial, categories }: AddItemMo
               <span className="ml-1 font-normal text-[var(--muted)]">({t("common.optional")})</span>
             </label>
             <select
-              value={category ?? ""}
-              onChange={(event) => setCategory(event.target.value || null)}
+              value={categoryId ?? ""}
+              onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : null)}
               className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 text-base text-[var(--foreground)] transition-colors focus:border-[var(--primary)] focus:bg-[var(--surface)] focus:outline-none md:text-sm"
             >
               <option value="">{t("shoppingList.noCategory")}</option>
               {categories.map((itemCategory) => (
-                <option key={itemCategory} value={itemCategory}>
-                  {itemCategory}
+                <option key={itemCategory.id} value={itemCategory.id}>
+                  {itemCategory.name}
                 </option>
               ))}
             </select>

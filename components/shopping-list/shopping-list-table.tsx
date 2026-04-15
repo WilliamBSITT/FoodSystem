@@ -85,9 +85,9 @@ export function ShoppingListTable({
             {item.category ? (
               <span
                 className="inline-flex w-fit rounded-lg px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600"
-                style={categoryStyleByName[item.category]}
+                style={categoryStyleByName[item.category.name]}
               >
-                {item.category}
+                {item.category.name}
               </span>
             ) : (
               <span className="text-xs text-[var(--muted)]">—</span>

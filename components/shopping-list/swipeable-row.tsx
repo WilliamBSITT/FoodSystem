@@ -84,9 +84,9 @@ export function SwipeableRow({
           {item.category ? (
             <span
               className="mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600"
-              style={categoryStyleByName[item.category]}
+              style={categoryStyleByName[item.category.name]}
             >
-              {item.category}
+              {item.category.name}
             </span>
           ) : (
             <span className="mt-0.5 text-[11px] text-[var(--muted)]">—</span>

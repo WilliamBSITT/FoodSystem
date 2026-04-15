@@ -5,7 +5,7 @@ const SHOPPING_LIST_TABLE = "shopping_list_items";
 
 export interface ShoppingListMutationInput {
   name: string;
-  category: string | null;
+  category_id: number | null;
   qty: number;
 }
 
@@ -15,7 +15,7 @@ export async function fetchShoppingItemsPage(pageNumber: number, pageSize: numbe
 
   const { data, error } = await supabase
     .from(SHOPPING_LIST_TABLE)
-    .select("*")
+    .select("*,category:categories(*)")
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -58,7 +58,7 @@ export async function updateShoppingItem(
     .from(SHOPPING_LIST_TABLE)
     .update(data)
     .eq("id", itemId)
-    .select()
+    .select("*,category:categories(*)")
     .single();
 
   if (error) {
@@ -74,8 +74,8 @@ export async function addShoppingItem(
 ): Promise<ShoppingItem> {
   const { data: inserted, error } = await supabase
     .from(SHOPPING_LIST_TABLE)
-    .insert({ name: data.name, category: data.category, qty: data.qty })
-    .select()
+    .insert({ name: data.name, category_id: data.category_id, qty: data.qty })
+    .select("*,category:categories(*)")
     .single();
 
   if (error) {

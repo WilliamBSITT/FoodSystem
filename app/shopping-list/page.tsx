@@ -82,18 +82,18 @@ export default function Page() {
   const visibleItems = useMemo(() => items.filter((item) => {
     if (item.checked) return false;
     if (!normalizedSearch) return true;
-    return buildSearchableText([item.name, item.category ?? ""]).includes(normalizedSearch);
+    return buildSearchableText([item.name, item.category?.name ?? ""]).includes(normalizedSearch);
   }), [items, normalizedSearch]);
 
   const presentCategories = useMemo(() => Array.from(
-    new Set(visibleItems.map((item) => item.category).filter(Boolean) as string[]),
+    new Set(visibleItems.map((item) => item.category_id).filter((id): id is number => typeof id === "number")),
   ), [visibleItems]);
 
   const filteredItems = useMemo(() =>
     activeFilter === "__none__"
-      ? visibleItems.filter((item) => !item.category)
+      ? visibleItems.filter((item) => !item.category_id)
       : activeFilter
-        ? visibleItems.filter((item) => item.category === activeFilter)
+        ? visibleItems.filter((item) => item.category_id === Number(activeFilter))
         : visibleItems,
   [activeFilter, visibleItems]);
 
@@ -103,15 +103,18 @@ export default function Page() {
 
   const filters = useMemo(() => [
     { key: null, label: t("shoppingList.all"), count: displayRemainingCount },
-    ...presentCategories.map((category) => ({
-      key: category,
-      label: category,
-      count: visibleItems.filter((item) => item.category === category).length,
-    })),
-    ...(visibleItems.some((item) => !item.category)
-      ? [{ key: "__none__", label: t("shoppingList.uncategorized"), count: visibleItems.filter((item) => !item.category).length }]
+    ...presentCategories.map((catId) => {
+      const cat = dbCategories.find((c) => c.id === catId);
+      return {
+        key: String(catId),
+        label: cat?.name ?? "Unknown",
+        count: visibleItems.filter((item) => item.category_id === catId).length,
+      };
+    }),
+    ...(visibleItems.some((item) => !item.category_id)
+      ? [{ key: "__none__", label: t("shoppingList.uncategorized"), count: visibleItems.filter((item) => !item.category_id).length }]
       : []),
-  ], [displayRemainingCount, presentCategories, visibleItems, t]);
+  ], [displayRemainingCount, presentCategories, visibleItems, dbCategories, t]);
 
   const categoryTagStyleByName = useMemo<Record<string, CSSProperties>>(() => {
     const styleByName: Record<string, CSSProperties> = {};
@@ -133,16 +136,19 @@ export default function Page() {
     return styleByName;
   }, [dbCategories]);
 
-  const styledFilters = useMemo(() => filters.map((filter) => ({
-    ...filter,
-    style: filter.key && filter.key !== "__none__" ? categoryTagStyleByName[filter.key] : undefined,
-  })), [filters, categoryTagStyleByName]);
+  const styledFilters = useMemo(() => filters.map((filter) => {
+    let style: CSSProperties | undefined;
+    if (filter.key && filter.key !== "__none__") {
+      const catId = Number(filter.key);
+      const cat = dbCategories.find((c) => c.id === catId);
+      style = cat ? categoryTagStyleByName[cat.name] : undefined;
+    }
+    return { ...filter, style };
+  }), [filters, dbCategories, categoryTagStyleByName]);
 
   const modalCategoryOptions = useMemo(() => {
-    const fromDb = dbCategories.map((category) => category.name.trim()).filter(Boolean);
-    const fromItems = items.map((item) => (item.category ?? "").trim()).filter(Boolean);
-    return Array.from(new Set([...fromDb, ...fromItems])).sort((left, right) => left.localeCompare(right));
-  }, [dbCategories, items]);
+    return dbCategories.map((cat) => ({ id: cat.id, name: cat.name }));
+  }, [dbCategories]);
 
   const handleCheck = checkItemWithUndo;
 
