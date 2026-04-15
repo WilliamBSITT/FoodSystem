@@ -48,7 +48,7 @@ CREATE TABLE inventory_items (
 CREATE TABLE shopping_list_items (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  category VARCHAR(100),
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
   qty INTEGER NOT NULL DEFAULT 1,
   checked BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
