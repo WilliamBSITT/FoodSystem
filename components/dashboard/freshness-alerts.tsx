@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { ExpiryAlertItem } from "./expiry-alert-item";
 import { InventoryItemForm } from "@/components/inventory/inventory-item-form";
-import { useInventory } from "@/hooks/useInventory";
 import { useFreshnessAlerts } from "@/hooks/useFreshnessAlerts";
 import { useCategories } from "@/hooks/useCategories";
 import { useStorageZones } from "@/hooks/useStorageZones";
@@ -35,7 +34,6 @@ interface FreshnessAlertsProps {
 type EditMode = "quantity-only" | "full";
 
 export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
-  const { refetch: refetchInventory } = useInventory();
   const { items: items, loading, error, refetch } = useFreshnessAlerts();
   const { categories } = useCategories();
   const { zones } = useStorageZones();

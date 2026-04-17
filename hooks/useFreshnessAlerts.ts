@@ -12,6 +12,10 @@ const SELECT_QUERY = `
   zone_detail:storage_zone_details(*)
 `;
 
+type CategoryData = Record<string, unknown>;
+type ZoneData = Record<string, unknown>;
+type ZoneDetailData = Record<string, unknown>;
+
 export type InventoryItem = {
   id: number;
   family: string;
@@ -24,9 +28,9 @@ export type InventoryItem = {
   category_id?: number;
   zone_id?: number;
   zone_detail_id?: number;
-  category?: any;
-  zone?: any;
-  zone_detail?: any;
+  category?: CategoryData;
+  zone?: ZoneData;
+  zone_detail?: ZoneDetailData;
 };
 
 export function useFreshnessAlerts({ days = EXPIRY_THRESHOLD_DAYS, limit = 50 } = {}) {
@@ -53,7 +57,7 @@ export function useFreshnessAlerts({ days = EXPIRY_THRESHOLD_DAYS, limit = 50 } 
         throw fetchError;
       }
 
-      const rows = (data ?? []) as any[];
+      const rows = (data ?? []) as Array<Record<string, unknown>>;
 
       const mapped = rows.map((r) => ({
         ...r,
