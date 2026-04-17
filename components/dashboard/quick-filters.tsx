@@ -33,6 +33,7 @@ import {
   type QuickFilterKind,
 } from "@/lib/quick-filters-config";
 import type { SortMode, StatusFilter } from "@/hooks/useInventoryFilters";
+import type { StorageZone } from "@/hooks/useStorageZones";
 
 type TranslateFn = ReturnType<typeof useI18n>["t"];
 
@@ -64,7 +65,14 @@ function defaultTargetValue(kind: QuickFilterKind, options: Record<QuickFilterKi
     return "expiring";
   }
 
-  return options[kind][0]?.id ?? (kind === "category" ? "uncategorized" : kind === "zone" ? "unassigned" : "all");
+  return (
+    options[kind][0]?.id ??
+    (kind === "category"
+      ? "uncategorized"
+      : kind === "zone" || kind === "subZone"
+        ? "unassigned"
+        : "all")
+  );
 }
 
 function buildInitialDraft(kind: QuickFilterKind, options: Record<QuickFilterKind, QuickFilterOption[]>) {
@@ -74,9 +82,13 @@ function buildInitialDraft(kind: QuickFilterKind, options: Record<QuickFilterKin
 function getTargetOptions(
   categories: Array<{ id: number; name: string }>,
   families: Array<{ id: number; name: string }>,
-  zones: Array<{ id: number; name: string }>,
+  zones: Array<Pick<StorageZone, "id" | "name" | "details">>,
   t: TranslateFn,
 ): Record<QuickFilterKind, QuickFilterOption[]> {
+  const subZones = zones.flatMap((zone) =>
+    (zone.details ?? []).map((detail) => createOption("subZone", String(detail.id), `${zone.name} · ${detail.label}`)),
+  );
+
   return {
     status: [createOption("status", "expiring", t("quickFilters.expiring.label"))],
     category: [
@@ -87,6 +99,10 @@ function getTargetOptions(
     zone: [
       ...zones.map((zone) => createOption("zone", String(zone.id), zone.name)),
       createOption("zone", "unassigned", t("inventory.noZone")),
+    ],
+    subZone: [
+      ...subZones,
+      createOption("subZone", "unassigned", t("inventory.noSubZone")),
     ],
   };
 }
@@ -142,6 +158,7 @@ type AdvancedQuickFilterTarget = {
   selectedFamilyFilter: string;
   selectedCategoryFilters: string[];
   selectedZoneFilters: string[];
+  selectedSubZoneFilters: string[];
   sortMode: SortMode;
 };
 
@@ -172,6 +189,10 @@ function buildAdvancedTargetValue(target: AdvancedQuickFilterTarget): string {
     params.set("zoneIds", target.selectedZoneFilters.join(","));
   }
 
+  if (target.selectedSubZoneFilters.length > 0) {
+    params.set("subZoneIds", target.selectedSubZoneFilters.join(","));
+  }
+
   if (target.sortMode !== "created-asc") {
     params.set("sort", target.sortMode);
   }
@@ -185,6 +206,7 @@ function parseAdvancedTarget(draft: QuickFilterDraft): AdvancedQuickFilterTarget
     selectedFamilyFilter: "all",
     selectedCategoryFilters: [],
     selectedZoneFilters: [],
+    selectedSubZoneFilters: [],
     sortMode: "created-asc",
   };
 
@@ -201,6 +223,12 @@ function parseAdvancedTarget(draft: QuickFilterDraft): AdvancedQuickFilterTarget
       selectedZoneFilters: parseCsvParam([
         ...advancedQuery.getAll("zoneIds"),
         ...advancedQuery.getAll("zoneId"),
+      ]),
+      selectedSubZoneFilters: parseCsvParam([
+        ...advancedQuery.getAll("subZoneIds"),
+        ...advancedQuery.getAll("subZoneId"),
+        ...advancedQuery.getAll("zoneDetailIds"),
+        ...advancedQuery.getAll("zoneDetailId"),
       ]),
       sortMode: parseSortMode(advancedQuery.get("sort")),
     };
@@ -224,6 +252,13 @@ function parseAdvancedTarget(draft: QuickFilterDraft): AdvancedQuickFilterTarget
     return {
       ...defaults,
       selectedZoneFilters: draft.targetValue ? [draft.targetValue] : [],
+    };
+  }
+
+  if (draft.kind === "subZone") {
+    return {
+      ...defaults,
+      selectedSubZoneFilters: draft.targetValue ? [draft.targetValue] : [],
     };
   }
 
@@ -295,6 +330,7 @@ function QuickFiltersEditor({
     () => getTargetOptions(categories, families, zones, t),
     [categories, families, t, zones],
   );
+  const hasSubZones = useMemo(() => zones.some((zone) => (zone.details?.length ?? 0) > 0), [zones]);
 
   const renderedFilters = drafts.filter((draft) => draft.kind && draft.targetValue);
   const isLoadingOptions = loadingCategories || loadingFamilies || loadingZones;
@@ -304,7 +340,15 @@ function QuickFiltersEditor({
   }
 
   function addDraft() {
-    const defaultKind = categories.length > 0 ? "category" : families.length > 0 ? "family" : zones.length > 0 ? "zone" : "status";
+    const defaultKind = categories.length > 0
+      ? "category"
+      : families.length > 0
+        ? "family"
+        : hasSubZones
+          ? "subZone"
+          : zones.length > 0
+            ? "zone"
+            : "status";
     const nextDraft = buildInitialDraft(defaultKind, targetOptions);
 
     // For category quick-filters, start with no category selected by default
@@ -365,6 +409,14 @@ function QuickFiltersEditor({
     updateAdvancedTarget(id, (current) => ({
       ...current,
       selectedFamilyFilter: value,
+    }));
+  }
+
+  function updateKind(id: string, value: QuickFilterKind) {
+    updateDraft(id, (current) => ({
+      ...current,
+      kind: value,
+      targetValue: defaultTargetValue(value, targetOptions),
     }));
   }
 
@@ -552,6 +604,21 @@ function QuickFiltersEditor({
                         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
                           <div className="space-y-3">
                             <div>
+                              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{t("quickFilters.kind")}</p>
+                              <BorderedSelect
+                                value={draft.kind}
+                                onChange={(event) => updateKind(draft.id, event.target.value as QuickFilterKind)}
+                                className="h-10"
+                              >
+                                <option value="category">{t("inventory.category")}</option>
+                                <option value="family">{t("inventory.familyFilter")}</option>
+                                <option value="zone">{t("inventory.zone")}</option>
+                                {hasSubZones ? <option value="subZone">{t("inventory.subZone")}</option> : null}
+                                <option value="status">{t("inventory.status")}</option>
+                              </BorderedSelect>
+                            </div>
+
+                            <div>
                               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{t("quickFilters.combinedCriteriaTitle")}</p>
                               <p className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--muted-strong)]">
                                 {t("quickFilters.combinedCriteriaDesc")}
@@ -678,6 +745,50 @@ function QuickFiltersEditor({
                                                   type="checkbox"
                                                   checked={checked}
                                                   onChange={() => toggleZoneFilter(draft.id, option.id)}
+                                                  className="h-4 w-4 shrink-0 accent-[#3345b8]"
+                                                />
+                                              </label>
+                                            );
+                                          })}
+                                        </div>
+                                      </details>
+                                    </div>
+
+                                    <div>
+                                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{t("inventory.subZone")}</p>
+                                      <details className="group rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                                        <summary className="flex h-10 cursor-pointer list-none items-center justify-between px-3 text-sm text-[var(--foreground)]">
+                                          <span>
+                                            {advancedTarget.selectedSubZoneFilters.length === 0
+                                              ? t("inventory.allFeminine")
+                                              : t("inventory.selectedSummary", {
+                                                count: advancedTarget.selectedSubZoneFilters.length,
+                                                plural: advancedTarget.selectedSubZoneFilters.length > 1 ? "s" : "",
+                                              })}
+                                          </span>
+                                          <span className="text-xs text-[var(--muted)] transition-transform group-open:rotate-180">▾</span>
+                                        </summary>
+                                        <div className="max-h-36 space-y-1 overflow-auto border-t border-[var(--border)] px-2 py-2 pr-3">
+                                          {targetOptions.subZone.map((option) => {
+                                            const checked = advancedTarget.selectedSubZoneFilters.includes(option.id);
+
+                                            return (
+                                              <label
+                                                key={option.id}
+                                                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-muted)]"
+                                              >
+                                                <span className="min-w-0 text-sm text-[var(--foreground)]">{option.label}</span>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={checked}
+                                                  onChange={() =>
+                                                    updateAdvancedTarget(draft.id, (current) => ({
+                                                      ...current,
+                                                      selectedSubZoneFilters: current.selectedSubZoneFilters.includes(option.id)
+                                                        ? current.selectedSubZoneFilters.filter((entry) => entry !== option.id)
+                                                        : [...current.selectedSubZoneFilters, option.id],
+                                                    }))
+                                                  }
                                                   className="h-4 w-4 shrink-0 accent-[#3345b8]"
                                                 />
                                               </label>

@@ -13,6 +13,7 @@ interface UseInventoryFiltersProps {
   selectedFamilyFilter: string;
   selectedCategoryFilters: string[];
   selectedZoneFilters: string[];
+  selectedSubZoneFilters: string[];
   sortMode: SortMode;
 }
 
@@ -21,6 +22,7 @@ interface UseInventoryFiltersReturn {
   sortedVisibleItems: InventoryItem[];
   categoryCounts: Map<string, number>;
   zoneCounts: Map<string, number>;
+  subZoneCounts: Map<string, number>;
   stats: {
     totalItems: number;
     zonesCount: number;
@@ -41,6 +43,7 @@ export function useInventoryFilters({
   selectedFamilyFilter,
   selectedCategoryFilters,
   selectedZoneFilters,
+  selectedSubZoneFilters,
   sortMode,
 }: UseInventoryFiltersProps): UseInventoryFiltersReturn {
   const normalizedSearch = normalizeSearchText(searchQuery);
@@ -92,6 +95,29 @@ export function useInventoryFilters({
     return counts;
   }, [itemsList, statusFilter, selectedFamilyFilter]);
 
+  const subZoneCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    itemsList.forEach((item) => {
+      if (statusFilter === "expiring" && !isExpiringSoon(item)) {
+        return;
+      }
+
+      if (selectedFamilyFilter !== "all" && String(item.family_id ?? "") !== selectedFamilyFilter) {
+        return;
+      }
+
+      if (typeof item.zone_detail?.id === "number") {
+        const key = String(item.zone_detail.id);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      } else {
+        counts.set("unassigned", (counts.get("unassigned") ?? 0) + 1);
+      }
+    });
+
+    return counts;
+  }, [itemsList, statusFilter, selectedFamilyFilter]);
+
   const visibleItems = useMemo(() => {
     return itemsList.filter((item) => {
       if (statusFilter === "expiring" && !isExpiringSoon(item)) return false;
@@ -113,6 +139,13 @@ export function useInventoryFilters({
           return false;
         }
       }
+
+      if (selectedSubZoneFilters.length > 0) {
+        const itemSubZoneKey = typeof item.zone_detail?.id === "number" ? String(item.zone_detail.id) : "unassigned";
+        if (!selectedSubZoneFilters.includes(itemSubZoneKey)) {
+          return false;
+        }
+      }
       
       if (!normalizedSearch) return true;
 
@@ -127,7 +160,15 @@ export function useInventoryFilters({
 
       return searchable.includes(normalizedSearch);
     });
-  }, [itemsList, statusFilter, selectedFamilyFilter, selectedCategoryFilters, selectedZoneFilters, normalizedSearch]);
+  }, [
+    itemsList,
+    statusFilter,
+    selectedFamilyFilter,
+    selectedCategoryFilters,
+    selectedZoneFilters,
+    selectedSubZoneFilters,
+    normalizedSearch,
+  ]);
 
   const sortedVisibleItems = useMemo(() => {
     const nextItems = [...visibleItems];
@@ -190,6 +231,7 @@ export function useInventoryFilters({
     sortedVisibleItems,
     categoryCounts,
     zoneCounts,
+    subZoneCounts,
     stats,
   };
 }
