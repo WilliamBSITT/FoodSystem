@@ -193,13 +193,12 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
 
     const parsedCategoryId = editCategoryId ? Number.parseInt(editCategoryId, 10) : null;
     const shoppingItemName = sanitizeInput(editName) || editingItem.name;
-    const shoppingItemCategory = editingItem.category?.name ?? null;
 
     const { error: shoppingListError } = await supabase
       .from("shopping_list_items")
       .insert({
         name: shoppingItemName,
-        category: shoppingItemCategory,
+        category_id: Number.isNaN(parsedCategoryId ?? NaN) ? null : parsedCategoryId,
         qty: 1,
       });
 
