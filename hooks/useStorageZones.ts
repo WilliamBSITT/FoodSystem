@@ -250,6 +250,7 @@ export function useStorageZones() {
       LOCAL_CACHE_KEYS.storageZones,
       LOCAL_CACHE_KEYS.attentionItems,
       LOCAL_CACHE_KEYS.inventoryItems,
+      LOCAL_CACHE_KEYS.dashboardInventory,
     ]);
   }
 

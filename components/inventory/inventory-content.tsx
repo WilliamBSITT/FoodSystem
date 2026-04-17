@@ -11,6 +11,7 @@ import { BottomToast } from "@/components/ui/bottom-toast";
 import { InventoryItemForm } from "./inventory-item-form";
 import { InventoryCard } from "./inventory-card";
 import { useInventory, type InventoryItem } from "@/hooks/useInventory";
+import { useDashboardInventory } from "@/hooks/useDashboardInventory";
 import { useCategories } from "@/hooks/useCategories";
 import { useFamilies } from "@/hooks/useFamilies";
 import { useStorageZones } from "@/hooks/useStorageZones";
@@ -43,6 +44,7 @@ export function InventoryContent({
   initialSortMode = "created-asc",
 }: InventoryContentProps) {
   const { items, totalItemsCount, loading, error, refetch, hasMore, loadMore, loadingMore } = useInventory();
+  const { items: dashboardItems, loading: dashboardLoading } = useDashboardInventory();
   const { categories } = useCategories();
   const { families } = useFamilies();
   const { zones } = useStorageZones();
@@ -73,6 +75,9 @@ export function InventoryContent({
   const { zonesCount, unassignedItems, storageCoverage } = stats;
   const uncategorizedLabel = t("inventory.uncategorized");
   const itemsCount = totalItemsCount;
+  const stockedItems = useMemo(() => {
+    return dashboardItems.reduce((accumulator, item) => accumulator + (Number(item.stock) || 0), 0);
+  }, [dashboardItems]);
 
   const groupedItems = useMemo(() => {
     const groups = new Map<string, InventoryItem[]>();
@@ -185,7 +190,9 @@ export function InventoryContent({
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-xs text-[var(--muted)]">{t("inventory.itemsInStock")}</p>
-                  <p className="text-3xl font-semibold text-[var(--foreground)]">{totalItemsCount}</p>
+                  <p className="text-3xl font-semibold text-[var(--foreground)]">
+                    {dashboardLoading ? "…" : stockedItems.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-[var(--muted)]">{t("inventory.storageZones")}</p>

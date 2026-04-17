@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { ExpiryAlertItem } from "./expiry-alert-item";
 import { InventoryItemForm } from "@/components/inventory/inventory-item-form";
-import { useInventory } from "@/hooks/useInventory";
-import { useFreshnessAlerts } from "@/hooks/useFreshnessAlerts";
+import { useFreshnessAlerts, useFreshnessCalendarMonthItems } from "@/hooks/useFreshnessAlerts";
 import { useCategories } from "@/hooks/useCategories";
 import { useStorageZones } from "@/hooks/useStorageZones";
 import { useEditInventoryItem } from "@/hooks/useEditInventoryItem";
@@ -35,30 +34,39 @@ interface FreshnessAlertsProps {
 type EditMode = "quantity-only" | "full";
 
 export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
-  const { refetch: refetchInventory } = useInventory();
-  const { items: items, loading, error, refetch } = useFreshnessAlerts();
+  const { items: alertItems, loading, error, refetch: refetchAlerts } = useFreshnessAlerts();
   const { categories } = useCategories();
   const { zones } = useStorageZones();
   const { t } = useI18n();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [editMode, setEditMode] = useState<EditMode>("quantity-only");
   useBodyScrollLock(isCalendarOpen);
-
-  const edit = useEditInventoryItem({ onSuccess: refetch, categories });
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   });
+  const {
+    items: calendarItems,
+    loading: calendarLoading,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useFreshnessCalendarMonthItems(calendarMonth);
 
-  const { calendarEntries, itemsByDay } = useFreshnessCalendar(items ?? [], searchQuery);
+  const { calendarEntries: alertEntries } = useFreshnessCalendar(alertItems ?? [], searchQuery);
+  const { calendarEntries, itemsByDay } = useFreshnessCalendar(calendarItems ?? [], searchQuery);
+
+  const edit = useEditInventoryItem({
+    onSuccess: async () => {
+      await Promise.all([refetchAlerts(), refetchCalendar()]);
+    },
+    categories,
+  });
 
   const alerts = useMemo(() => {
-    return calendarEntries
+    return alertEntries
       .filter(({ daysLeft }) => daysLeft <= EXPIRY_THRESHOLD_DAYS)
       .slice(0, MAX_VISIBLE_ALERTS);
-  }, [calendarEntries]);
-
-  // Use inventory refetch to refresh main cache after edits
+  }, [alertEntries]);
 
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
 
@@ -72,7 +80,7 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
     [selectedMonthEntries],
   );
 
-  function openEdit(item: NonNullable<typeof items>[number]) {
+  function openEdit(item: NonNullable<typeof alertItems>[number]) {
     setEditMode("quantity-only");
     edit.open(item);
   }
@@ -198,6 +206,13 @@ export function FreshnessAlerts({ searchQuery = "" }: FreshnessAlertsProps) {
                     <ChevronRight size={16} />
                   </button>
                 </div>
+
+                {calendarLoading ? (
+                  <p className="mb-3 text-sm text-[var(--muted)]">{t("freshness.loading")}</p>
+                ) : null}
+                {calendarError ? (
+                  <p className="mb-3 text-sm text-red-500">{t("common.error")}: {calendarError}</p>
+                ) : null}
 
                 <div className="hidden grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted)] md:grid">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (

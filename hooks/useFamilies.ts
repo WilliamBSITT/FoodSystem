@@ -92,7 +92,11 @@ export function useFamilies() {
 
         setFamilies(nextFamilies);
         writeClientCache(LOCAL_CACHE_KEYS.families, nextFamilies);
-        invalidateClientCaches([LOCAL_CACHE_KEYS.inventoryItems, LOCAL_CACHE_KEYS.attentionItems]);
+        invalidateClientCaches([
+          LOCAL_CACHE_KEYS.inventoryItems,
+          LOCAL_CACHE_KEYS.attentionItems,
+          LOCAL_CACHE_KEYS.dashboardInventory,
+        ]);
         return updated;
       } finally {
         setUpdating(false);
@@ -110,7 +114,11 @@ export function useFamilies() {
       const nextFamilies = syncedFamilies.filter((family) => family.id !== id);
       setFamilies(nextFamilies);
       writeClientCache(LOCAL_CACHE_KEYS.families, nextFamilies);
-      invalidateClientCaches([LOCAL_CACHE_KEYS.inventoryItems, LOCAL_CACHE_KEYS.attentionItems]);
+      invalidateClientCaches([
+        LOCAL_CACHE_KEYS.inventoryItems,
+        LOCAL_CACHE_KEYS.attentionItems,
+        LOCAL_CACHE_KEYS.dashboardInventory,
+      ]);
     } finally {
       setDeleting(false);
     }

@@ -90,6 +90,7 @@ export function useCategories() {
         setCategories(nextCategories);
         writeClientCache(LOCAL_CACHE_KEYS.categories, nextCategories);
         invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+        invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
 
         return updated;
       } finally {
@@ -114,6 +115,7 @@ export function useCategories() {
         setCategories(nextCategories);
         writeClientCache(LOCAL_CACHE_KEYS.categories, nextCategories);
         invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+        invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
       } finally {
         setDeleting(false);
       }

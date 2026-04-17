@@ -176,6 +176,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     }
 
     await onSuccess();
@@ -193,13 +194,12 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
 
     const parsedCategoryId = editCategoryId ? Number.parseInt(editCategoryId, 10) : null;
     const shoppingItemName = sanitizeInput(editName) || editingItem.name;
-    const shoppingItemCategory = editingItem.category?.name ?? null;
 
     const { error: shoppingListError } = await supabase
       .from("shopping_list_items")
       .insert({
         name: shoppingItemName,
-        category: shoppingItemCategory,
+        category_id: Number.isNaN(parsedCategoryId ?? NaN) ? null : parsedCategoryId,
         qty: 1,
       });
 
@@ -245,6 +245,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     } else {
       const { error: deleteError } = await supabase
         .from("inventory_items")
@@ -261,6 +262,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     }
 
     await onSuccess();
@@ -358,6 +360,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
     }
 
     invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+    invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     await onSuccess();
     onCompleted?.(t("inventory.itemDeleted"));
     setPendingForceDelete(false);
