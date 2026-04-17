@@ -2,7 +2,7 @@
 
 import { StatCard } from "@/components/ui/stat-card";
 import { useMemo } from "react";
-import { useInventory } from "@/hooks/useInventory";
+import { useDashboardInventory } from "@/hooks/useDashboardInventory";
 import { isExpiringSoon } from "@/lib/overview-utils";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { buildSearchableText, normalizeSearchText } from "@/lib/search-normalization";
@@ -12,7 +12,7 @@ interface OverviewProps {
 }
 
 export function Overview({ searchQuery = "" }: OverviewProps) {
-  const { items = [] } = useInventory();
+  const { items = [], loading } = useDashboardInventory();
   const { t } = useI18n();
 
   const normalizedSearch = normalizeSearchText(searchQuery);
@@ -56,7 +56,11 @@ export function Overview({ searchQuery = "" }: OverviewProps) {
         </p>
       </div>
       <div className="flex gap-3">
-        <StatCard label={t("overview.stockedItems")} value={stockedItems.toLocaleString()} valueColor="#3345b8" />
+        <StatCard
+          label={t("overview.stockedItems")}
+          value={loading ? "…" : stockedItems.toLocaleString()}
+          valueColor="#3345b8"
+        />
         <StatCard
           label={t("overview.wasteRisk")}
           value={`${wasteRisk}%`}

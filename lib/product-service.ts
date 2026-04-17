@@ -49,4 +49,5 @@ export async function createProduct(input: CreateProductInput): Promise<void> {
 
   // Invalidate cache so the new product appears in inventory
   invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+  invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
 }

@@ -176,6 +176,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     }
 
     await onSuccess();
@@ -244,6 +245,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     } else {
       const { error: deleteError } = await supabase
         .from("inventory_items")
@@ -260,6 +262,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
       }
 
       invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+      invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     }
 
     await onSuccess();
@@ -357,6 +360,7 @@ export function useEditInventoryItem({ onSuccess, onCompleted, categories }: Use
     }
 
     invalidateClientCache(LOCAL_CACHE_KEYS.inventoryItems);
+    invalidateClientCache(LOCAL_CACHE_KEYS.dashboardInventory);
     await onSuccess();
     onCompleted?.(t("inventory.itemDeleted"));
     setPendingForceDelete(false);

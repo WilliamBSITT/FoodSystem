@@ -9,9 +9,11 @@ export type { CacheEntry };
 
 const CACHE_PREFIX = "stock-cache:";
 const memoryCache = new Map<string, CacheEntry<unknown>>();
+const cacheInvalidationListeners = new Map<string, Set<() => void>>();
 
 export const LOCAL_CACHE_KEYS = {
   inventoryItems: "inventory-items",
+  dashboardInventory: "dashboard-inventory",
   categories: "categories",
   families: "families",
   storageZones: "storage-zones",
@@ -30,6 +32,32 @@ export function getUserScopedCacheKey(key: string, userId: string) {
 
 function canUseLocalStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function notifyCacheInvalidation(key: string) {
+  cacheInvalidationListeners.get(key)?.forEach((listener) => {
+    listener();
+  });
+}
+
+export function subscribeToClientCacheInvalidation(key: string, listener: () => void) {
+  const listeners = cacheInvalidationListeners.get(key) ?? new Set<() => void>();
+  listeners.add(listener);
+  cacheInvalidationListeners.set(key, listeners);
+
+  return () => {
+    const currentListeners = cacheInvalidationListeners.get(key);
+
+    if (!currentListeners) {
+      return;
+    }
+
+    currentListeners.delete(listener);
+
+    if (currentListeners.size === 0) {
+      cacheInvalidationListeners.delete(key);
+    }
+  };
 }
 
 export function readClientCache<T>(key: string): CacheEntry<T> | null {
@@ -91,10 +119,12 @@ export function invalidateClientCache(key: string) {
   memoryCache.delete(key);
 
   if (!canUseLocalStorage()) {
+    notifyCacheInvalidation(key);
     return;
   }
 
   window.localStorage.removeItem(getStorageKey(key));
+  notifyCacheInvalidation(key);
 }
 
 export function invalidateClientCaches(keys: string[]) {
