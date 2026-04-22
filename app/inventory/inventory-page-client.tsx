@@ -55,6 +55,13 @@ export function InventoryPageClient() {
       ...searchParams.getAll("zoneId"),
     ]);
 
+    const selectedSubZoneFilters = parseCsvParam([
+      ...searchParams.getAll("subZoneIds"),
+      ...searchParams.getAll("subZoneId"),
+      ...searchParams.getAll("zoneDetailIds"),
+      ...searchParams.getAll("zoneDetailId"),
+    ]);
+
     const sortMode = parseSortMode(searchParams.get("sort"));
 
     return {
@@ -62,6 +69,7 @@ export function InventoryPageClient() {
       selectedFamilyFilter,
       selectedCategoryFilters,
       selectedZoneFilters,
+      selectedSubZoneFilters,
       sortMode,
     } as const;
   }, [searchParams]);
@@ -85,6 +93,7 @@ export function InventoryPageClient() {
           initialFamilyFilter={initialFilters.selectedFamilyFilter}
           initialCategoryFilters={initialFilters.selectedCategoryFilters}
           initialZoneFilters={initialFilters.selectedZoneFilters}
+          initialSubZoneFilters={initialFilters.selectedSubZoneFilters}
           initialSortMode={initialFilters.sortMode}
         />
         <AddProductFAB />

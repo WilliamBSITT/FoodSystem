@@ -41,7 +41,7 @@ FoodSystem is self-hosted and ready to use. For a step-by-step setup guide, head
 
 Contributions are welcome! Whether it's a bug fix, a new feature, or an improvement to the docs - feel free to open an issue or submit a pull request.
 
-Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) before submitting.
+Please read [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) before submitting.
 
 ---
 

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type QuickFilterKind = "category" | "family" | "zone" | "status";
+export type QuickFilterKind = "category" | "family" | "zone" | "subZone" | "status";
 
 export type QuickFilterIconName =
   | "Archive"
@@ -56,6 +56,7 @@ const QUICK_FILTER_DEFAULTS: Record<QuickFilterKind, { icon: QuickFilterIconName
   category: { icon: "Boxes", accentColor: "#3345b8" },
   family: { icon: "Leaf", accentColor: "#2e8a4f" },
   zone: { icon: "Warehouse", accentColor: "#b86c2f" },
+  subZone: { icon: "Warehouse", accentColor: "#8f5a2a" },
   status: { icon: "Timer", accentColor: "#c43f3f" },
 };
 
@@ -118,6 +119,8 @@ export function buildInventoryFilterHref(kind: QuickFilterKind, value: string | 
     params.set("family", String(value));
   } else if (kind === "zone") {
     params.set("zoneIds", String(value));
+  } else if (kind === "subZone") {
+    params.set("subZoneIds", String(value));
   } else if (kind === "status") {
     params.set("status", String(value));
   }

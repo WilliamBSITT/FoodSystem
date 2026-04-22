@@ -29,6 +29,7 @@ interface InventoryContentProps {
   initialFamilyFilter?: string;
   initialCategoryFilters?: string[];
   initialZoneFilters?: string[];
+  initialSubZoneFilters?: string[];
   initialSortMode?: SortMode;
 }
 
@@ -41,6 +42,7 @@ export function InventoryContent({
   initialFamilyFilter = "all",
   initialCategoryFilters = [],
   initialZoneFilters = [],
+  initialSubZoneFilters = [],
   initialSortMode = "created-asc",
 }: InventoryContentProps) {
   const { items, totalItemsCount, loading, error, refetch, hasMore, loadMore, loadingMore } = useInventory();
@@ -52,6 +54,7 @@ export function InventoryContent({
   const [selectedFamilyFilter, setSelectedFamilyFilter] = useState(initialFamilyFilter);
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>(initialCategoryFilters);
   const [selectedZoneFilters, setSelectedZoneFilters] = useState<string[]>(initialZoneFilters);
+  const [selectedSubZoneFilters, setSelectedSubZoneFilters] = useState<string[]>(initialSubZoneFilters);
   const [sortMode, setSortMode] = useState<SortMode>(initialSortMode);
   const { toastMessage, showToast } = useAutoDismissToast();
   const { viewMode } = useInventoryViewMode();
@@ -62,13 +65,14 @@ export function InventoryContent({
 
   const edit = useEditInventoryItem({ onSuccess: refetch, onCompleted: showToast, categories });
 
-  const { visibleItems, sortedVisibleItems, categoryCounts, zoneCounts, stats } = useInventoryFilters({
+  const { visibleItems, sortedVisibleItems, categoryCounts, zoneCounts, subZoneCounts, stats } = useInventoryFilters({
     items,
     searchQuery,
     statusFilter,
     selectedFamilyFilter,
     selectedCategoryFilters,
     selectedZoneFilters,
+    selectedSubZoneFilters,
     sortMode,
   });
 
@@ -78,6 +82,23 @@ export function InventoryContent({
   const stockedItems = useMemo(() => {
     return dashboardItems.reduce((accumulator, item) => accumulator + (Number(item.stock) || 0), 0);
   }, [dashboardItems]);
+
+  const subZoneOptions = useMemo(() => {
+    return zones.flatMap((zone) =>
+      (zone.details ?? []).map((detail) => ({
+        id: String(detail.id),
+        label: `${zone.name} · ${detail.label}`,
+      })),
+    );
+  }, [zones]);
+
+  const subZoneSummary =
+    selectedSubZoneFilters.length === 0 || selectedSubZoneFilters.length === subZoneOptions.length
+      ? t("inventory.allSubZones", { count: subZoneOptions.length })
+      : t("inventory.selectedSummary", {
+        count: selectedSubZoneFilters.length,
+        plural: selectedSubZoneFilters.length > 1 ? "s" : "",
+      });
 
   const groupedItems = useMemo(() => {
     const groups = new Map<string, InventoryItem[]>();
@@ -103,6 +124,15 @@ export function InventoryContent({
 
   function toggleZoneFilter(value: string) {
     setSelectedZoneFilters((current) => {
+      if (current.includes(value)) {
+        return current.filter((entry) => entry !== value);
+      }
+      return [...current, value];
+    });
+  }
+
+  function toggleSubZoneFilter(value: string) {
+    setSelectedSubZoneFilters((current) => {
       if (current.includes(value)) {
         return current.filter((entry) => entry !== value);
       }
@@ -240,7 +270,7 @@ export function InventoryContent({
           />
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.9fr_0.9fr_1fr]">
+        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr]">
           <div className="space-y-2">
             <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--foreground)]">
               <Funnel size={14} />
@@ -361,6 +391,59 @@ export function InventoryContent({
                         type="checkbox"
                         checked={selectedZoneFilters.includes("unassigned")}
                         onChange={() => toggleZoneFilter("unassigned")}
+                        className="h-4 w-4 accent-[#3345b8]"
+                      />
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-[var(--foreground)]">{t("inventory.subZone")}</p>
+            <details className="group relative w-full max-w-[260px]">
+              <summary className="flex h-10 w-full cursor-pointer list-none items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--foreground)]">
+                <span className="truncate">{subZoneSummary}</span>
+                <span className="text-xs text-[var(--muted)]">▾</span>
+              </summary>
+              <div className="absolute left-0 top-[calc(100%+8px)] z-20 w-[320px] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-lg">
+                <button
+                  type="button"
+                  className="mb-2 w-full rounded-lg bg-[var(--surface-muted)] px-2 py-1 text-left text-xs font-medium text-[var(--foreground)]"
+                  onClick={() => setSelectedSubZoneFilters([])}
+                >
+                  {t("inventory.allSubZones", { count: subZoneOptions.length })}
+                </button>
+
+                <div className="max-h-56 space-y-1 overflow-auto pr-1">
+                  {subZoneOptions.map((subZone) => {
+                    const checked = selectedSubZoneFilters.includes(subZone.id);
+
+                    return (
+                      <label key={subZone.id} className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-muted)]">
+                        <span className="text-sm text-[var(--foreground)]">{subZone.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[var(--muted)]">{subZoneCounts.get(subZone.id) ?? 0}</span>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleSubZoneFilter(subZone.id)}
+                            className="h-4 w-4 accent-[#3345b8]"
+                          />
+                        </div>
+                      </label>
+                    );
+                  })}
+
+                  <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--surface-muted)]">
+                    <span className="text-sm text-[var(--foreground)]">{t("inventory.noSubZone")}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--muted)]">{subZoneCounts.get("unassigned") ?? 0}</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedSubZoneFilters.includes("unassigned")}
+                        onChange={() => toggleSubZoneFilter("unassigned")}
                         className="h-4 w-4 accent-[#3345b8]"
                       />
                     </div>
